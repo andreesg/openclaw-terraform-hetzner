@@ -5,8 +5,7 @@
 
 SHELL := /bin/bash
 .PHONY: init plan apply destroy ssh ssh-root tunnel output ip fmt validate clean help \
-        bootstrap deploy push-env push-config setup-auth backup-now restore logs status \
-        pull-knowledge
+        bootstrap deploy push-env push-config setup-auth backup-now restore logs status
 
 # Default target
 .DEFAULT_GOAL := help
@@ -128,18 +127,6 @@ ifndef BACKUP
 endif
 	./deploy/restore.sh $(BACKUP)
 
-pull-knowledge: ## Sync knowledge base from VPS to local Obsidian vault
-	@if [ -z "$(KNOWLEDGE_VAULT_PATH)" ]; then \
-		echo -e "$(RED)[ERROR]$(NC) KNOWLEDGE_VAULT_PATH not set. Add it to config/inputs.sh"; \
-		exit 1; \
-	fi
-	@echo -e "$(GREEN)[INFO]$(NC) Pulling knowledge base from $(SERVER_IP)..."
-	@rsync -avz --delete \
-		--exclude='.obsidian' --exclude='.DS_Store' \
-		openclaw@$(SERVER_IP):~/.openclaw/workspace/knowledge/ \
-		$(KNOWLEDGE_VAULT_PATH)/
-	@echo -e "$(GREEN)Knowledge base synced.$(NC)"
-
 logs: ## Stream Docker logs from the VPS
 	@echo -e "$(GREEN)[INFO]$(NC) Streaming logs from VPS..."
 	@./deploy/logs.sh
@@ -178,7 +165,6 @@ help: ## Show this help message
 	@echo -e "  $(GREEN)tunnel$(NC)          SSH tunnel to gateway (localhost:18789)"
 	@echo -e "  $(GREEN)status$(NC)          Check VPS status"
 	@echo -e "  $(GREEN)logs$(NC)            Stream Docker logs"
-	@echo -e "  $(GREEN)pull-knowledge$(NC)  Sync knowledge base to local Obsidian vault"
 	@echo -e "  $(GREEN)backup-now$(NC)      Run backup now"
 	@echo -e "  $(GREEN)restore$(NC)         Restore from backup (BACKUP=filename)"
 	@echo -e "  $(GREEN)output$(NC)          Show Terraform outputs"

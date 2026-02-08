@@ -51,13 +51,6 @@ export TF_VAR_ssh_key_fingerprint="CHANGE_ME_your-ssh-key-fingerprint"
 export CONFIG_DIR="/path/to/your/openclaw-config"
 
 # ============================================
-# OPTIONAL: Knowledge Base Sync
-# ============================================
-# Local Obsidian vault path for syncing OpenClaw knowledge base
-# Used by: make pull-knowledge
-export KNOWLEDGE_VAULT_PATH="$HOME/Documents/openclaw-knowledge"
-
-# ============================================
 # REQUIRED: GitHub Container Registry
 # ============================================
 # For pulling private Docker images during bootstrap and deploy
