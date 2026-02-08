@@ -1,0 +1,127 @@
+#!/bin/bash
+# =============================================================================
+# OpenClaw Deploy Script
+# =============================================================================
+# Purpose: Pull the latest Docker image and restart the container.
+# Usage: ./deploy/deploy.sh [VPS_IP]
+#
+# This script:
+#   1. Pulls the latest image from GHCR
+#   2. Restarts the container with the new image
+#   3. Cleans up old images
+# =============================================================================
+
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------------
+
+VPS_USER="openclaw"
+SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+TERRAFORM_DIR="infra/terraform/envs/prod"
+
+# -----------------------------------------------------------------------------
+# Get VPS IP
+# -----------------------------------------------------------------------------
+
+if [[ -n "${1:-}" ]]; then
+    VPS_IP="$1"
+else
+    if command -v terraform &> /dev/null && [[ -d "$TERRAFORM_DIR/.terraform" ]]; then
+        VPS_IP=$(cd "$TERRAFORM_DIR" && terraform output -raw server_ip 2>/dev/null) || {
+            echo "Error: Could not get VPS IP from terraform output."
+            echo "Usage: $0 <VPS_IP>"
+            exit 1
+        }
+    else
+        echo "Error: No VPS IP provided and terraform not available."
+        echo "Usage: $0 <VPS_IP>"
+        exit 1
+    fi
+fi
+
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m'
+
+echo -e "${BOLD}OpenClaw Deploy${NC}  ${DIM}$VPS_IP${NC}"
+echo ""
+
+# -----------------------------------------------------------------------------
+# Deploy on VPS
+# -----------------------------------------------------------------------------
+
+ssh $SSH_OPTS "$VPS_USER@$VPS_IP" bash -s << 'REMOTE_SCRIPT'
+
+# Colors
+G='\033[0;32m'
+R='\033[0;31m'
+B='\033[0;34m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m'
+
+cd "$HOME/openclaw" 2>/dev/null || {
+    echo -e "${R}Error:${NC} ~/openclaw directory not found. Run bootstrap first."
+    exit 1
+}
+
+if [[ ! -f "docker-compose.yml" ]]; then
+    echo -e "${R}Error:${NC} docker-compose.yml not found. Run bootstrap first."
+    exit 1
+fi
+
+# Pull
+echo -e "${BOLD}Pull${NC}"
+echo ""
+echo -ne "  Pulling latest image...  "
+if docker compose pull --quiet 2>/dev/null; then
+    echo -e "${G}done${NC}"
+else
+    echo -e "${R}failed${NC}"
+    exit 1
+fi
+
+# Restart
+echo ""
+echo -e "${BOLD}Restart${NC}"
+echo ""
+echo -ne "  Starting container...    "
+if docker compose up -d 2>/dev/null; then
+    echo -e "${G}done${NC}"
+else
+    echo -e "${R}failed${NC}"
+    exit 1
+fi
+
+# Cleanup
+echo ""
+echo -e "${BOLD}Cleanup${NC}"
+echo ""
+PRUNED=$(docker image prune -f 2>/dev/null | grep "Total reclaimed" || echo "Nothing to reclaim")
+echo -e "  ${DIM}${PRUNED}${NC}"
+
+# Verify
+echo ""
+echo -e "${BOLD}Status${NC}"
+echo ""
+sleep 2
+while IFS= read -r line; do
+    NAME=$(echo "$line" | cut -f1)
+    STATUS=$(echo "$line" | cut -f2-)
+    if echo "$STATUS" | grep -q "Up"; then
+        echo -e "  ${G}●${NC} ${NAME}  ${G}${STATUS}${NC}"
+    else
+        echo -e "  ${R}●${NC} ${NAME}  ${R}${STATUS}${NC}"
+    fi
+done < <(docker compose ps --format '{{.Name}}\t{{.Status}}' 2>/dev/null)
+
+echo ""
+echo -e "${G}Deploy complete${NC}"
+echo ""
+REMOTE_SCRIPT
