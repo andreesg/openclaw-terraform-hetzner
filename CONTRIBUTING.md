@@ -49,7 +49,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ```bash
 # Clone your fork
-git clone https://github.com/andreesg/openclaw-terraform-hetzner.git
+git clone https://github.com/YOUR_USERNAME/openclaw-terraform-hetzner.git
 cd openclaw-terraform-hetzner
 
 # Configure inputs
