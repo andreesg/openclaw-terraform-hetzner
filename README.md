@@ -24,14 +24,14 @@ For information about OpenClaw itself, see the [OpenClaw documentation](https://
 2. **Hetzner Cloud Account** with API token ([Console](https://console.hetzner.cloud/))
 3. **Hetzner Object Storage** for Terraform state (optional but recommended)
 4. **SSH Key** at `~/.ssh/id_rsa.pub`
-5. **Docker configuration repo**: [openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config)
+5. **Docker configuration repo**: [openclaw-docker-config](https://github.com/YOUR_USERNAME/openclaw-docker-config)
 
 ## Quick Start
 
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/andreesg/openclaw-terraform-hetzner.git
+git clone https://github.com/YOUR_USERNAME/openclaw-terraform-hetzner.git
 cd openclaw-terraform-hetzner
 ```
 
@@ -105,8 +105,8 @@ make tunnel  # Opens tunnel on localhost:18789
 |-----------|---------|----------|
 | **infra/terraform/** | Infrastructure definitions | This repo |
 | **deploy/** | Deployment automation | This repo |
-| **docker/** | Container configuration | [openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config) |
-| **config/** | OpenClaw configuration | [openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config) |
+| **docker/** | Container configuration | [openclaw-docker-config](https://github.com/YOUR_USERNAME/openclaw-docker-config) |
+| **config/** | OpenClaw configuration | [openclaw-docker-config](https://github.com/YOUR_USERNAME/openclaw-docker-config) |
 
 ## Usage
 
@@ -148,7 +148,7 @@ make setup-auth  # Configure Claude subscription auth
 
 ### Server Sizing
 
-Default: CX22 (2 vCPU, 4GB RAM)
+Default: CX23 (2 vCPU, 4GB RAM)
 
 To change server type, add to `config/inputs.sh`:
 ```bash
@@ -187,7 +187,7 @@ The S3 backend configuration is commented out by default in `infra/terraform/env
 
 ### Switching AI Providers
 
-OpenClaw supports multiple AI providers. This setup defaults to Anthropic Claude, but you can switch to other providers by modifying the configuration in [openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config).
+OpenClaw supports multiple AI providers. This setup defaults to Anthropic Claude, but you can switch to other providers by modifying the configuration in [openclaw-docker-config](https://github.com/YOUR_USERNAME/openclaw-docker-config).
 
 **Supported providers:**
 - Anthropic Claude (Opus, Sonnet, Haiku)
@@ -448,24 +448,16 @@ cat ~/.openclaw/agents/main/agent/auth-profiles.json
 
 ## Infrastructure Costs
 
-Estimated monthly costs on Hetzner Cloud (as of February 2026):
+See [Hetzner Cloud pricing](https://www.hetzner.com/cloud#pricing) for current rates. This setup uses a small shared VPS (default: CX23) plus minimal object storage for Terraform state.
 
-| Resource | Specification | Monthly Cost |
-|----------|---------------|--------------|
-| VPS (CX22) | 2 vCPU, 4GB RAM, 40GB SSD | €5.83 |
-| Object Storage | State bucket (~1MB) | €0.01 |
-| Backups | Optional (20% of VPS cost) | €1.17 |
-| **Total (without backups)** | | **€5.84** |
-| **Total (with backups)** | | **€7.01** |
-
-> **Note:** Prices exclude Anthropic/OpenAI API costs. See [Hetzner pricing](https://www.hetzner.com/cloud#pricing) for current rates.
+> **Note:** Prices exclude Anthropic/OpenAI API costs.
 
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 **Ways to contribute:**
-- Report bugs via [GitHub Issues](https://github.com/andreesg/openclaw-terraform-hetzner/issues)
+- Report bugs via [GitHub Issues](https://github.com/YOUR_USERNAME/openclaw-terraform-hetzner/issues)
 - Submit feature requests
 - Improve documentation
 - Submit pull requests
@@ -474,7 +466,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 ## Related Projects
 
 - **[OpenClaw](https://github.com/openclaw/openclaw)** — The AI coding assistant this infrastructure deploys
-- **[openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config)** — Docker and OpenClaw configuration (companion repo)
+- **[openclaw-docker-config](https://github.com/YOUR_USERNAME/openclaw-docker-config)** — Docker and OpenClaw configuration (companion repo)
 
 ## License
 
@@ -482,6 +474,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/andreesg/openclaw-terraform-hetzner/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/andreesg/openclaw-terraform-hetzner/discussions)
+- **Issues:** [GitHub Issues](https://github.com/YOUR_USERNAME/openclaw-terraform-hetzner/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/YOUR_USERNAME/openclaw-terraform-hetzner/discussions)
 - **OpenClaw Docs:** [docs.openclaw.ai](https://docs.openclaw.ai/)

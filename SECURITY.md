@@ -5,7 +5,7 @@
 If you discover a security vulnerability in this project, please report it responsibly:
 
 1. **Do NOT** open a public GitHub issue
-2. Email the maintainer directly (see profile for contact)
+2. Use [GitHub Security Advisories](../../security/advisories/new) to report vulnerabilities privately
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce
@@ -73,7 +73,7 @@ This project deploys cloud infrastructure. Please be aware of:
 
 8. **Resource Limits**
    - Set up billing alerts in Hetzner Console
-   - Start with small server types (cx22) for testing
+   - Start with small server types (cx23) for testing
    - Monitor resource usage regularly
    - Destroy test deployments when done (`make destroy`)
 

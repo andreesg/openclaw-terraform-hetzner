@@ -69,5 +69,5 @@ export CLAUDE_SETUP_TOKEN=""
 # ============================================
 # Server Configuration (Optional Overrides)
 # ============================================
-# export TF_VAR_server_type="cx22"
+# export TF_VAR_server_type="cx23"
 # export TF_VAR_server_location="nbg1"

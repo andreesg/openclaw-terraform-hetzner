@@ -31,5 +31,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secrets externalized to environment variables
 - .gitignore for sensitive files
 
-[Unreleased]: https://github.com/andreesg/openclaw-terraform-hetzner/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/andreesg/openclaw-terraform-hetzner/releases/tag/v1.0.0
+[Unreleased]: https://github.com/YOUR_USERNAME/openclaw-terraform-hetzner/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/YOUR_USERNAME/openclaw-terraform-hetzner/releases/tag/v1.0.0
