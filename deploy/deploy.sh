@@ -87,16 +87,32 @@ else
     exit 1
 fi
 
-# Restart
+# Enable workspace sync profile if GIT_WORKSPACE_REPO is configured
+PROFILES=""
+SYNC_ENABLED=false
+if [[ -f .env ]] && grep -qE '^GIT_WORKSPACE_REPO=.+' .env; then
+    PROFILES="--profile sync"
+    SYNC_ENABLED=true
+fi
+
 echo ""
 echo -e "${BOLD}Restart${NC}"
 echo ""
 echo -ne "  Starting container...    "
-if docker compose up -d 2>/dev/null; then
+if docker compose $PROFILES up -d 2>/dev/null; then
     echo -e "${G}done${NC}"
 else
     echo -e "${R}failed${NC}"
     exit 1
+fi
+
+# Stop workspace-sync if it was running but sync is now disabled
+if [[ "$SYNC_ENABLED" == "false" ]]; then
+    if docker compose ps --format '{{.Name}}' 2>/dev/null | grep -q workspace-sync; then
+        echo -ne "  Stopping workspace-sync...  "
+        docker compose stop workspace-sync 2>/dev/null && docker compose rm -f workspace-sync 2>/dev/null
+        echo -e "${G}done${NC}"
+    fi
 fi
 
 # Cleanup

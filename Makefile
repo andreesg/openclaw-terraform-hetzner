@@ -5,7 +5,8 @@
 
 SHELL := /bin/bash
 .PHONY: init plan apply destroy ssh ssh-root tunnel output ip fmt validate clean help \
-        bootstrap deploy push-env push-config setup-auth backup-now restore logs status
+        bootstrap deploy push-env push-config setup-auth backup-now restore logs status \
+        workspace-sync
 
 # Default target
 .DEFAULT_GOAL := help
@@ -135,6 +136,12 @@ status: ## Check OpenClaw status on the VPS
 	@echo -e "$(GREEN)[INFO]$(NC) Checking VPS status..."
 	@./deploy/status.sh
 
+workspace-sync: ## Sync workspace to GitHub now
+	@echo -e "$(GREEN)[INFO]$(NC) Syncing workspace on $(SERVER_IP)..."
+	ssh -o StrictHostKeyChecking=accept-new openclaw@$(SERVER_IP) \
+		'cd ~/openclaw && docker compose exec workspace-sync workspace-sync.sh'
+
+
 # =============================================================================
 # Help
 # =============================================================================
@@ -167,6 +174,7 @@ help: ## Show this help message
 	@echo -e "  $(GREEN)logs$(NC)            Stream Docker logs"
 	@echo -e "  $(GREEN)backup-now$(NC)      Run backup now"
 	@echo -e "  $(GREEN)restore$(NC)         Restore from backup (BACKUP=filename)"
+	@echo -e "  $(GREEN)workspace-sync$(NC)  Sync workspace to GitHub now"
 	@echo -e "  $(GREEN)output$(NC)          Show Terraform outputs"
 	@echo -e "  $(GREEN)ip$(NC)              Show server IP"
 	@echo ""
