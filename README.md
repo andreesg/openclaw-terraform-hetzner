@@ -23,7 +23,10 @@ For information about OpenClaw itself, see the [OpenClaw documentation](https://
 1. **Terraform** >= 1.5 ([Installation Guide](https://developer.hashicorp.com/terraform/install))
 2. **Hetzner Cloud Account** with API token ([Console](https://console.hetzner.cloud/))
 3. **Hetzner Object Storage** for Terraform state (optional but recommended)
-4. **SSH Key** at `~/.ssh/id_rsa.pub`
+4. **SSH Key** at `~/.ssh/id_rsa` (default, configurable via `SSH_KEY` environment variable)
+   - The private key (`~/.ssh/id_rsa`) is required for SSH connections
+   - The public key (`~/.ssh/id_rsa.pub`) must be uploaded to Hetzner Cloud
+   - To use a different key, set `SSH_KEY` in your environment: `export SSH_KEY=~/.ssh/custom_key`
 5. **Docker configuration repo**: [openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config)
 
 ## Quick Start

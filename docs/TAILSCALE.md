@@ -285,7 +285,7 @@ Host openclaw
     HostName 100.64.1.5  # Your Tailscale IP
     User openclaw
     Port 8822
-    IdentityFile ~/.ssh/openclaw
+    IdentityFile ~/.ssh/id_rsa  # Or your custom SSH key
     StrictHostKeyChecking accept-new
 ```
 

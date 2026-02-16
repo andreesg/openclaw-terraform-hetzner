@@ -9,7 +9,8 @@
 #   1. Shows Docker Compose container status
 #   2. Shows recent container logs
 #   3. Shows system info (disk, memory, uptime)
-#   4. Shows backup status
+#   4. Shows Tailscale VPN status (if installed)
+#   5. Shows backup status
 # =============================================================================
 
 set -euo pipefail
@@ -21,9 +22,10 @@ set -euo pipefail
 VPS_USER="openclaw"
 TERRAFORM_DIR="infra/terraform/envs/prod"
 
-# SSH port and options
+# SSH key and port
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
 SSH_PORT=$(cd "$TERRAFORM_DIR" && terraform output -raw ssh_port 2>/dev/null) || SSH_PORT=22
-SSH_OPTS="-o StrictHostKeyChecking=accept-new -i ~/.ssh/openclaw -p $SSH_PORT"
+SSH_OPTS="-o StrictHostKeyChecking=accept-new -i $SSH_KEY -p $SSH_PORT"
 
 # -----------------------------------------------------------------------------
 # Get VPS IP
@@ -142,6 +144,33 @@ echo -e "  ${G}Memory:${NC}  $MEM_INFO"
 # Uptime
 UP=$(uptime | sed 's/.*up /up /' | sed 's/,.*user.*//')
 echo -e "  ${G}Uptime:${NC}  $UP"
+
+# -----------------------------------------------------------------------------
+# Tailscale status
+# -----------------------------------------------------------------------------
+
+if command -v tailscale &> /dev/null; then
+    echo ""
+    echo -e "${BOLD}Tailscale${NC}"
+    echo ""
+
+    if sudo tailscale status --json &> /dev/null; then
+        # Tailscale is running
+        TS_IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
+        TS_STATUS=$(sudo tailscale status --peers=false 2>/dev/null | head -1 | awk '{print $NF}' || echo "unknown")
+
+        if [ "$TS_STATUS" = "active" ] || echo "$TS_STATUS" | grep -q "logged in"; then
+            echo -e "  ${G}Status:${NC}  Connected"
+            echo -e "  ${G}IP:${NC}      $TS_IP"
+        else
+            echo -e "  ${Y}Status:${NC}  $TS_STATUS"
+            echo -e "  ${DIM}IP:      $TS_IP${NC}"
+        fi
+    else
+        echo -e "  ${Y}Status:${NC}  Not authenticated"
+        echo -e "  ${DIM}Run 'sudo tailscale up' to authenticate${NC}"
+    fi
+fi
 
 # -----------------------------------------------------------------------------
 # Backup status
