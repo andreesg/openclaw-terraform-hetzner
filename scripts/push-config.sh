@@ -94,8 +94,8 @@ if [[ $FILE_COUNT -eq 0 ]]; then
     exit 0
 fi
 
-# Set secure permissions on all config files
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" "chmod 600 $REMOTE_CONFIG_DIR/*"
+# Set secure permissions on config files only (not subdirectories)
+ssh $SSH_OPTS "$VPS_USER@$VPS_IP" "find $REMOTE_CONFIG_DIR -maxdepth 1 -type f -exec chmod 600 {} +"
 
 echo ""
 echo "[OK] Pushed $FILE_COUNT config file(s)"
