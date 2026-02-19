@@ -94,6 +94,19 @@ if ! ssh $SSH_OPTS "$VPS_USER@$VPS_IP" "echo 'SSH connection successful'" 2>/dev
 fi
 
 # -----------------------------------------------------------------------------
+# Wait for cloud-init to finish
+# -----------------------------------------------------------------------------
+
+echo ""
+echo "Waiting for cloud-init to complete..."
+if ssh $SSH_OPTS "$VPS_USER@$VPS_IP" "command -v cloud-init >/dev/null 2>&1 && timeout 300 cloud-init status --wait >/dev/null 2>&1"; then
+    echo "[OK] Cloud-init completed"
+else
+    echo "[WARN] Could not confirm cloud-init completion"
+    echo "       If you hit permission errors, wait a few minutes and re-run bootstrap"
+fi
+
+# -----------------------------------------------------------------------------
 # Log in to GitHub Container Registry
 # -----------------------------------------------------------------------------
 
