@@ -298,7 +298,7 @@ OpenClaw gateway runs on `127.0.0.1:18789` (localhost only) for security.
 make tunnel  # Creates tunnel: localhost:18789 -> VPS:18789
 ```
 
-Then access at `http://localhost:18789` in your browser.
+Then open `http://localhost:18789` in your browser. The gateway will ask for your **Gateway Token** — paste your `OPENCLAW_GATEWAY_TOKEN` value (from `secrets/openclaw.env`) into the settings field to authenticate.
 
 ## Troubleshooting
 
