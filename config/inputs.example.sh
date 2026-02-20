@@ -74,22 +74,17 @@ export CLAUDE_SETUP_TOKEN=""
 # ============================================
 # OPTIONAL: Tailscale VPN
 # ============================================
-# Enable Tailscale for private networking
-# Recommended for production deployments
+# Enable Tailscale for private networking. When enabled:
+# - Tailscale is installed on first boot via cloud-init
+# - UFW opens port 41641/udp for Tailscale traffic
+# - You can restrict ssh_allowed_cidrs to Tailscale IPs (100.64.0.0/10)
+#   for zero-public-exposure SSH
 export TF_VAR_enable_tailscale=false
 
 # Tailscale auth key (generate at https://login.tailscale.com/admin/settings/keys)
-# Leave empty to authenticate manually via SSH after deployment
-# Recommended: Use a reusable, non-ephemeral key for easier re-deployment
+# Leave empty to authenticate manually after deployment with: make tailscale-up
+# Recommended: reusable + pre-authorized key (not ephemeral)
 export TF_VAR_tailscale_auth_key=""
-
-# ============================================
-# OPTIONAL: Custom SSH Port
-# ============================================
-# Recommended with Tailscale: 8822 (reduces public exposure)
-# Default: 22 (standard SSH port)
-# Note: After changing the port, update your SSH config or use: ssh -p <port>
-export TF_VAR_ssh_port=22
 
 # ============================================
 # Server Configuration (Optional Overrides)

@@ -31,10 +31,8 @@ VPS_USER="openclaw"
 # Terraform directory (relative to repo root)
 TERRAFORM_DIR="infra/terraform/envs/prod"
 
-# SSH key and port
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
-SSH_PORT=$(cd "$TERRAFORM_DIR" && terraform output -raw ssh_port 2>/dev/null) || SSH_PORT=22
-SSH_OPTS="-o StrictHostKeyChecking=accept-new -i $SSH_KEY -p $SSH_PORT"
+SSH_OPTS="-o StrictHostKeyChecking=accept-new -i $SSH_KEY"
 
 # -----------------------------------------------------------------------------
 # Validate CONFIG_DIR

@@ -67,14 +67,12 @@ module "vps" {
   app_directory       = var.app_directory
 
   # Security configuration
-  ssh_port           = var.ssh_port
   enable_tailscale   = var.enable_tailscale
   tailscale_auth_key = var.tailscale_auth_key
 
   cloud_init_user_data = templatefile("${path.module}/../../../cloud-init/user-data.yml.tpl", {
     app_user           = var.app_user
     app_directory      = var.app_directory
-    ssh_port           = var.ssh_port
     enable_tailscale   = var.enable_tailscale
     tailscale_auth_key = var.tailscale_auth_key
   })
@@ -122,11 +120,6 @@ output "ssh_key_id" {
 output "firewall_id" {
   description = "Hetzner Cloud firewall ID"
   value       = module.vps.firewall_id
-}
-
-output "ssh_port" {
-  description = "SSH port number"
-  value       = module.vps.ssh_port
 }
 
 output "tailscale_enabled" {

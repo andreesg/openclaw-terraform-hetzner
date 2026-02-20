@@ -30,13 +30,13 @@ data "hcloud_ssh_key" "main" {
 resource "hcloud_firewall" "main" {
   name = "${var.project_name}-${var.environment}-firewall"
 
-  # Allow SSH from specified CIDRs (dynamic port)
+  # Allow SSH from specified CIDRs
   dynamic "rule" {
     for_each = var.ssh_allowed_cidrs
     content {
       direction  = "in"
       protocol   = "tcp"
-      port       = tostring(var.ssh_port)
+      port       = "22"
       source_ips = [rule.value]
     }
   }

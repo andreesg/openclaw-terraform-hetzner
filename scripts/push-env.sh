@@ -21,10 +21,8 @@ VPS_USER="openclaw"
 TERRAFORM_DIR="infra/terraform/envs/prod"
 ENV_FILE="secrets/openclaw.env"
 
-# SSH key and port
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
-SSH_PORT=$(cd "$TERRAFORM_DIR" && terraform output -raw ssh_port 2>/dev/null) || SSH_PORT=22
-SSH_OPTS="-o StrictHostKeyChecking=accept-new -i $SSH_KEY -p $SSH_PORT"
+SSH_OPTS="-o StrictHostKeyChecking=accept-new -i $SSH_KEY"
 REMOTE_PATH="/home/openclaw/openclaw/.env"
 
 # Required variables that must be non-empty
