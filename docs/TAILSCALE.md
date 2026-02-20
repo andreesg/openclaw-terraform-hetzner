@@ -75,9 +75,6 @@ export TF_VAR_enable_tailscale=true
 
 # Provide auth key for automatic setup (or leave empty for manual setup)
 export TF_VAR_tailscale_auth_key="tskey-auth-xxxxxxxxxxxxx"
-
-# Optional: Use custom SSH port (recommended with Tailscale)
-export TF_VAR_ssh_port=8822
 ```
 
 Source the configuration:
@@ -140,13 +137,13 @@ Example output: `100.64.1.5`
 **SSH via Tailscale**:
 
 ```bash
-ssh -p 8822 openclaw@100.64.1.5  # Use your Tailscale IP
+ssh openclaw@100.64.1.5  # Use your Tailscale IP
 ```
 
 **SSH tunnel to gateway**:
 
 ```bash
-ssh -p 8822 -N -L 18789:127.0.0.1:18789 openclaw@100.64.1.5
+ssh -N -L 18789:127.0.0.1:18789 openclaw@100.64.1.5
 ```
 
 Then open `http://localhost:18789` in your browser.
@@ -164,26 +161,24 @@ export TF_VAR_tailscale_auth_key=""  # Empty = manual auth
 
 After `make apply`, run `make tailscale-up` and authenticate via browser.
 
-### Recommended Configuration (Auto Auth + Custom SSH Port)
+### Recommended Configuration (Auto Auth)
 
-Enable Tailscale with automatic authentication and custom SSH port:
+Enable Tailscale with automatic authentication:
 
 ```bash
 export TF_VAR_enable_tailscale=true
 export TF_VAR_tailscale_auth_key="tskey-auth-xxxxxxxxxxxxx"
-export TF_VAR_ssh_port=8822
 ```
 
 This is the **recommended production setup** for maximum security.
 
 ### Hybrid Configuration (Tailscale + Public SSH)
 
-Keep SSH accessible on both public IP and Tailscale:
+Keep SSH accessible on both public IP and Tailscale (SSH stays on port 22):
 
 ```bash
 export TF_VAR_enable_tailscale=true
 export TF_VAR_tailscale_auth_key="tskey-auth-xxxxxxxxxxxxx"
-export TF_VAR_ssh_port=22  # Keep default SSH port
 ```
 
 Useful during migration or for backup access.
@@ -228,7 +223,7 @@ To expose the OpenClaw gateway **only** on your Tailnet (not on the public inter
 
 ```bash
 # Find your Tailscale HTTPS URL
-ssh -p 8822 openclaw@$(make tailscale-ip) 'sudo tailscale serve status'
+ssh openclaw@$(make tailscale-ip) 'sudo tailscale serve status'
 
 # Output example:
 # https://openclaw-prod.tailnet-name.ts.net (tailnet only)
@@ -271,7 +266,7 @@ If you prefer SSH tunneling over Tailscale Serve:
 Then tunnel via Tailscale:
 
 ```bash
-ssh -p 8822 -N -L 18789:127.0.0.1:18789 openclaw@$(make tailscale-ip)
+ssh -N -L 18789:127.0.0.1:18789 openclaw@$(make tailscale-ip)
 ```
 
 ## SSH Access via Tailscale
@@ -284,7 +279,6 @@ Add to `~/.ssh/config`:
 Host openclaw
     HostName 100.64.1.5  # Your Tailscale IP
     User openclaw
-    Port 8822
     IdentityFile ~/.ssh/id_rsa  # Or your custom SSH key
     StrictHostKeyChecking accept-new
 ```
@@ -302,7 +296,7 @@ ssh openclaw
 TAILSCALE_IP=$(make tailscale-ip)
 
 # SSH
-ssh -p 8822 openclaw@$TAILSCALE_IP
+ssh openclaw@$TAILSCALE_IP
 ```
 
 ### Makefile Commands
@@ -391,7 +385,7 @@ sudo ufw allow 41641/udp comment 'Tailscale'
 **Check Tailscale Serve status**:
 
 ```bash
-ssh -p 8822 openclaw@$(make tailscale-ip) 'sudo tailscale serve status'
+ssh openclaw@$(make tailscale-ip) 'sudo tailscale serve status'
 ```
 
 **Restart Tailscale Serve** (if OpenClaw config changed):
@@ -438,7 +432,7 @@ make apply
 3. Verify you can still SSH via Tailscale:
 
 ```bash
-ssh -p 8822 openclaw@$(make tailscale-ip)
+ssh openclaw@$(make tailscale-ip)
 ```
 
 ### Tailscale Exit Node
@@ -487,9 +481,8 @@ Control which devices can access the VPS:
 1. **Use reusable, pre-authorized auth keys** for easier re-deployment
 2. **Set auth key expiration** to 90 days and rotate regularly
 3. **Enable Tailscale MFA** for your account
-4. **Use custom SSH port (8822)** to reduce public exposure
-5. **Monitor Tailscale access** via the admin console
-6. **Keep Tailscale updated** on all devices
+4. **Monitor Tailscale access** via the admin console
+5. **Keep Tailscale updated** on all devices
 
 ## Additional Resources
 

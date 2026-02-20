@@ -58,29 +58,48 @@ make apply
 
 ---
 
-## Step 5: (Optional) Access dashboard via Tailscale
+## Step 5: (Optional) Harden SSH daemon
+
+Push the local sshd config template to the server to disable root login, password auth, and limit auth attempts:
+
+```bash
+make push-sshd-config
+```
+
+The template is at `config/sshd_config.tpl`. Port stays at 22 — access is controlled at the Hetzner firewall level.
+
+---
+
+## Step 6: (Optional) Access dashboard via Tailscale
 
 By default the gateway is only reachable via `make tunnel` (SSH port forwarding). With Tailscale you can expose it as a private HTTPS endpoint accessible from any device on your tailnet.
 
-**5a.** Add to your `openclaw.json` (in your config repo):
+**6a.** Add `allowTailscale` to your `openclaw.json` gateway section (in your config repo):
 
 ```json
-"gateway": {
-  "auth": {
-    "allowTailscale": true
+{
+  "gateway": {
+    "mode": "local",
+    "port": 18789,
+    "auth": {
+      "allowTailscale": true
+    }
   }
 }
 ```
 
 Push it: `make push-config`
 
-**5b.** Enable **Tailscale Serve** (not Funnel) in the [Tailscale admin console](https://login.tailscale.com/admin/dns) under the DNS/HTTPS section.
-
-**5c.** On the server, set up the serve proxy:
+**6b.** Enable **Tailscale Serve** for your tailnet. On the server, run:
 
 ```bash
 make ssh
 sudo tailscale serve --bg 18789
+```
+
+If Serve is not yet enabled, Tailscale will print a URL — open it in your browser to approve. Then re-run the command.
+
+```bash
 sudo tailscale serve status
 ```
 
@@ -90,7 +109,7 @@ The dashboard will be available at `https://openclaw-prod.<tailnet>.ts.net` from
 
 ---
 
-## Step 6: (Optional) Restrict SSH to Tailscale only
+## Step 7: (Optional) Restrict SSH to Tailscale only
 
 Once Tailscale is working, you can remove public SSH access entirely by restricting it to the Tailscale CGNAT subnet:
 

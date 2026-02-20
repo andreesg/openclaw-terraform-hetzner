@@ -39,7 +39,6 @@ This project deploys cloud infrastructure. Please be aware of:
    - **Better:** Enable Tailscale VPN for private SSH access (see below)
    - Use SSH keys, never passwords
    - Keep your private keys secure
-   - Consider custom SSH port (`TF_VAR_ssh_port=8822`) to reduce automated attacks
 
 3. **Tailscale VPN (Recommended)**
    - Enable Tailscale for zero-trust, encrypted networking

@@ -202,7 +202,6 @@ For enhanced security, deploy OpenClaw with Tailscale VPN to create a private, e
    ```bash
    export TF_VAR_enable_tailscale=true
    export TF_VAR_tailscale_auth_key="tskey-auth-xxxxxxxxxxxxx"
-   export TF_VAR_ssh_port=8822  # Optional: custom SSH port
    ```
 
 3. **Deploy**:
@@ -220,7 +219,7 @@ For enhanced security, deploy OpenClaw with Tailscale VPN to create a private, e
 5. **Connect via Tailscale**:
    ```bash
    # SSH via Tailscale
-   ssh -p 8822 openclaw@$(make tailscale-ip)
+   ssh openclaw@$(make tailscale-ip)
 
    # Access gateway at: https://openclaw-prod.your-tailnet.ts.net
    # (Configure OpenClaw with gateway.tailscale.mode: "serve")
@@ -465,7 +464,7 @@ cat ~/.openclaw/agents/main/agent/auth-profiles.json
 - **Better:** Use Tailscale VPN for private SSH access (see [Tailscale section](#tailscale-vpn-optional))
 - Use SSH keys, not passwords
 - Rotate keys regularly
-- Consider custom SSH port (`TF_VAR_ssh_port=8822`) to reduce automated attacks
+- Consider IP-restricting SSH via `TF_VAR_ssh_allowed_cidrs` or using Tailscale-only access
 
 ### Secrets Management
 
