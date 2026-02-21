@@ -18,10 +18,9 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 
 VPS_USER="openclaw"
-TERRAFORM_DIR="infra/terraform/envs/prod"
-
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
 SSH_OPTS="-o StrictHostKeyChecking=accept-new -i $SSH_KEY"
+TERRAFORM_DIR="infra/terraform/envs/prod"
 
 # -----------------------------------------------------------------------------
 # Get VPS IP
