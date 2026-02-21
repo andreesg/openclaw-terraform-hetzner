@@ -141,5 +141,17 @@ done < <(docker compose ps --format '{{.Name}}\t{{.Status}}' 2>/dev/null)
 
 echo ""
 echo -e "${G}Deploy complete${NC}"
+
+# Tailscale Serve — expose gateway on tailnet (idempotent, persists across reboots)
+if command -v tailscale &> /dev/null; then
+    echo ""
+    echo -e "${BOLD}Tailscale Serve${NC}"
+    echo ""
+    sudo tailscale serve --bg 18789 > /dev/null 2>&1 || true
+    SERVE_URL=$(sudo tailscale serve status 2>/dev/null | grep -oP 'https://[^\s]+' | head -1 || true)
+    if [[ -n "$SERVE_URL" ]]; then
+        echo -e "  ${G}●${NC} ${SERVE_URL}"
+    fi
+fi
 echo ""
 REMOTE_SCRIPT

@@ -5,7 +5,7 @@
 
 SHELL := /bin/bash
 .PHONY: init plan apply destroy ssh ssh-root tunnel output ip fmt validate clean help \
-        bootstrap deploy push-env push-config push-sshd-config setup-auth backup-now restore logs status \
+        bootstrap deploy push-env push-config setup-auth backup-now restore logs status \
         tailscale-status tailscale-ip tailscale-up tailscale-install \
         workspace-sync
 
@@ -69,7 +69,7 @@ ssh: ## SSH into the server as the openclaw user
 	@echo -e "$(GREEN)[INFO]$(NC) Connecting to $(SERVER_IP)..."
 	ssh -i $(SSH_KEY) openclaw@$(SERVER_IP)
 
-ssh-root: ## SSH into the server as root (only before make push-sshd-config)
+ssh-root: ## SSH into the server as root
 	@echo -e "$(YELLOW)[WARN]$(NC) Connecting as root to $(SERVER_IP)..."
 	ssh -i $(SSH_KEY) root@$(SERVER_IP)
 
@@ -96,27 +96,23 @@ clean: ## Clean up Terraform files (keeps state)
 
 bootstrap: ## Bootstrap OpenClaw on the VPS (run once after apply)
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Bootstrapping OpenClaw on VPS..."
-	@./deploy/bootstrap.sh
+	@./deploy/bootstrap.sh $(SERVER_IP)
 
 deploy: ## Pull latest image and restart container on the VPS
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Deploying latest image to VPS..."
-	@./deploy/deploy.sh
+	@./deploy/deploy.sh $(SERVER_IP)
 
 push-env: ## Push secrets/openclaw.env to the VPS
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Pushing secrets to VPS..."
-	@./scripts/push-env.sh
+	@./scripts/push-env.sh $(SERVER_IP)
 
 push-config: ## Push config files from CONFIG_DIR to the VPS
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Pushing config to VPS..."
-	@./scripts/push-config.sh
-
-push-sshd-config: ## Push sshd_config.tpl to the VPS, validate, and reload sshd
-	@echo -e "$(BLUE)[DEPLOY]$(NC) Pushing sshd config to VPS..."
-	@./scripts/push-sshd-config.sh
+	@./scripts/push-config.sh $(SERVER_IP)
 
 setup-auth: ## Set up Claude subscription auth on the VPS
 	@echo -e "$(BLUE)[AUTH]$(NC) Setting up Claude subscription auth..."
-	@./scripts/setup-auth.sh
+	@./scripts/setup-auth.sh $(SERVER_IP)
 
 backup-now: ## Run backup now on the VPS
 	@echo -e "$(GREEN)[INFO]$(NC) Running backup on $(SERVER_IP)..."
@@ -132,15 +128,15 @@ ifndef BACKUP
 	@echo "  ssh openclaw@$(SERVER_IP) 'ls ~/backups/'"
 	@exit 1
 endif
-	./deploy/restore.sh $(BACKUP)
+	./deploy/restore.sh $(BACKUP) $(SERVER_IP)
 
 logs: ## Stream Docker logs from the VPS
 	@echo -e "$(GREEN)[INFO]$(NC) Streaming logs from VPS..."
-	@./deploy/logs.sh
+	@./deploy/logs.sh $(SERVER_IP)
 
 status: ## Check OpenClaw status on the VPS (includes Tailscale if enabled)
 	@echo -e "$(GREEN)[INFO]$(NC) Checking VPS status..."
-	@./deploy/status.sh
+	@./deploy/status.sh $(SERVER_IP)
 
 # =============================================================================
 # Tailscale Commands
@@ -148,7 +144,7 @@ status: ## Check OpenClaw status on the VPS (includes Tailscale if enabled)
 
 tailscale-install: ## Install Tailscale on the running VPS and authenticate
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Installing Tailscale on VPS..."
-	@./scripts/tailscale-install.sh
+	@./scripts/tailscale-install.sh $(SERVER_IP)
 
 tailscale-status: ## Show detailed Tailscale status and peers
 	@echo -e "$(GREEN)[INFO]$(NC) Checking Tailscale status..."
@@ -189,7 +185,6 @@ help: ## Show this help message
 	@echo -e "  $(BLUE)deploy$(NC)          Pull latest image and restart container"
 	@echo -e "  $(BLUE)push-env$(NC)        Push secrets/openclaw.env to the VPS"
 	@echo -e "  $(BLUE)push-config$(NC)      Push config files to the VPS"
-	@echo -e "  $(BLUE)push-sshd-config$(NC) Push sshd config, validate, reload"
 	@echo -e "  $(BLUE)setup-auth$(NC)       Set up Claude subscription auth"
 	@echo ""
 	@echo -e "$(BOLD)Operations:$(NC)"

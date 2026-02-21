@@ -74,12 +74,7 @@ runcmd:
   # -----------------------------------------------------------------------------
   # Install Tailscale VPN
   # -----------------------------------------------------------------------------
-  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/$(lsb_release -cs).noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
-  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/$(lsb_release -cs).list | tee /etc/apt/sources.list.d/tailscale.list >/dev/null
-  - apt-get update
-  - apt-get install -y tailscale
-  - systemctl enable tailscaled
-  - systemctl start tailscaled
+  - curl -fsSL https://tailscale.com/install.sh | sh
 
 %{ if tailscale_auth_key != "" ~}
   # Authenticate Tailscale automatically

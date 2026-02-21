@@ -49,6 +49,7 @@ Required variables in `config/inputs.sh`:
 - `HCLOUD_TOKEN` - Hetzner Cloud API token
 - `TF_VAR_ssh_key_fingerprint` - SSH key fingerprint from Hetzner
 - `CONFIG_DIR` - Path to your openclaw-docker-config repository
+- `SERVER_IP` - Address scripts use to SSH into the VPS. Set to `openclaw-prod` when using Tailscale (MagicDNS hostname, stable across rebuilds). Leave unset to auto-detect from Terraform output (only works when public SSH is open).
 
 > **Tailscale (optional, recommended):** Set `TF_VAR_enable_tailscale=true` and `TF_VAR_tailscale_auth_key` to install Tailscale automatically on first boot — it lets you remove SSH from the public internet entirely. See [Firewall Rules](#firewall-rules).
 
@@ -193,6 +194,11 @@ Tailscale creates a private WireGuard mesh so SSH is reachable only from devices
 
 1. Get an auth key at [login.tailscale.com/admin/settings/keys](https://login.tailscale.com/admin/settings/keys) — use **reusable + pre-authorized**, not ephemeral.
 
+   > **Auth key expiry:** Reusable Tailscale auth keys expire after 90 days by default.
+   > If rebuilding months after the initial deploy, generate a fresh key at
+   > login.tailscale.com/admin/settings/keys and update `TF_VAR_tailscale_auth_key`
+   > in `config/inputs.sh`.
+
 2. Add to `config/inputs.sh`:
    ```bash
    export TF_VAR_enable_tailscale=true
@@ -207,17 +213,15 @@ Tailscale creates a private WireGuard mesh so SSH is reachable only from devices
    ssh -i $SSH_KEY openclaw@<tailscale-ip>  # confirm Tailscale SSH works
    ```
 
-4. Remove public SSH:
+4. Remove public SSH and point scripts at the Tailscale hostname:
    ```bash
    # In config/inputs.sh
    export TF_VAR_ssh_allowed_cidrs='[]'
+   export SERVER_IP="openclaw-prod"   # Tailscale MagicDNS — stable across rebuilds
    source config/inputs.sh && make plan && make apply
    ```
 
-After step 4, `make ssh`, `make tailscale-status`, and `make tailscale-ip` won't work (they connect via the public IP). SSH directly via your Tailscale IP:
-```bash
-ssh -i $SSH_KEY openclaw@<tailscale-ip>
-```
+After step 4, all `make` commands (`make ssh`, `make deploy`, `make status`, etc.) connect via `openclaw-prod` on your tailnet — no IP to track down.
 
 > **Recovery:** If Tailscale fails, use the [Hetzner web console](https://console.hetzner.cloud/) for emergency TTY access to the server.
 
@@ -366,6 +370,8 @@ sudo tailscale serve status  # prints your HTTPS URL
 Dashboard is then available at `https://openclaw-prod.<tailnet>.ts.net` from any device on your tailnet — no tunnel needed.
 
 > **Note:** Use Serve, not Funnel. Funnel makes the service publicly accessible on the internet.
+> See [OpenClaw Tailscale gateway docs](https://docs.openclaw.ai/gateway/tailscale)
+> for full configuration options including the `allowTailscale` setting.
 
 ## Troubleshooting
 
@@ -391,6 +397,7 @@ docker compose -f ~/openclaw/docker-compose.yml ps
 ```
 
 **Common causes:**
+
 - Missing environment variables in `.env`
 - Invalid OpenClaw configuration
 - API key issues
@@ -437,6 +444,36 @@ ls $CONFIG_DIR/docker/docker-compose.yml
 
 # Verify GHCR credentials
 docker login ghcr.io -u YOUR_GITHUB_USERNAME
+```
+
+### SSH Host Key Changed (after rebuild)
+
+**Cause:** Destroyed and re-provisioned the VPS — new server has a different
+host key at the same public IP.
+
+**Error:** `WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!`
+
+**Fix:**
+
+```bash
+ssh-keygen -R <old_vps_ip>
+# Then retry — SSH will prompt you to accept the new key.
+```
+
+### Stale Tailscale Machine After Rebuild
+
+**Cause:** After destroying a Tailscale-enabled VPS, the old `openclaw-prod`
+machine stays in the tailnet. The new VPS registers as `openclaw-prod-1`.
+
+**Fix:** Delete the stale machine from the Tailscale admin console before or
+after running `make apply`:
+
+  <https://login.tailscale.com/admin/machines>
+
+Then verify the new node has the correct name:
+
+```bash
+make tailscale-status
 ```
 
 ### API Billing Error
