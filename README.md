@@ -125,6 +125,7 @@ make output     # Show Terraform outputs
 ```bash
 make bootstrap  # Initial OpenClaw setup
 make deploy     # Pull latest image and restart
+make deploy-latest # Preferred: sync .env+compose and deploy GHCR image (image-synced config)
 make status     # Check deployment status
 make logs       # Stream container logs
 ```
