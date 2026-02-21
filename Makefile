@@ -5,7 +5,7 @@
 
 SHELL := /bin/bash
 .PHONY: init plan apply destroy ssh ssh-root tunnel output ip fmt validate clean help \
-        bootstrap deploy push-env push-config setup-auth backup-now restore logs status \
+        bootstrap deploy deploy-latest push-env push-config setup-auth backup-now restore logs status \
         workspace-sync
 
 # Default target
@@ -100,6 +100,10 @@ deploy: ## Pull latest image and restart container on the VPS
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Deploying latest image to VPS..."
 	@./deploy/deploy.sh
 
+deploy-latest: ## Sync .env+compose and deploy latest GHCR image (no local config SCP)
+	@echo -e "$(BLUE)[DEPLOY]$(NC) Deploying latest GHCR image with image-synced config..."
+	@./scripts/deploy-latest-ghcr.sh
+
 push-env: ## Push secrets/openclaw.env to the VPS
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Pushing secrets to VPS..."
 	@./scripts/push-env.sh
@@ -162,6 +166,7 @@ help: ## Show this help message
 	@echo -e "$(BOLD)Deploy:$(NC)"
 	@echo -e "  $(BLUE)bootstrap$(NC)       Bootstrap OpenClaw on the VPS (run once)"
 	@echo -e "  $(BLUE)deploy$(NC)          Pull latest image and restart container"
+	@echo -e "  $(BLUE)deploy-latest$(NC)   Sync .env+compose and deploy latest GHCR image"
 	@echo -e "  $(BLUE)push-env$(NC)        Push secrets/openclaw.env to the VPS"
 	@echo -e "  $(BLUE)push-config$(NC)     Push config files to the VPS"
 	@echo -e "  $(BLUE)setup-auth$(NC)      Set up Claude subscription auth"
