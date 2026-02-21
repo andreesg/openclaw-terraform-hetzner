@@ -28,11 +28,12 @@ GHCR_TOKEN="${GHCR_TOKEN:-}"
 # VPS user
 VPS_USER="openclaw"
 
-# Terraform directory (relative to repo root)
-TERRAFORM_DIR="infra/terraform/envs/prod"
-
+# SSH options
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
 SSH_OPTS="-o StrictHostKeyChecking=accept-new -i $SSH_KEY"
+
+# Terraform directory (relative to repo root)
+TERRAFORM_DIR="infra/terraform/envs/prod"
 
 # -----------------------------------------------------------------------------
 # Validate CONFIG_DIR

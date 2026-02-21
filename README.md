@@ -195,9 +195,8 @@ Tailscale creates a private WireGuard mesh so SSH is reachable only from devices
 1. Get an auth key at [login.tailscale.com/admin/settings/keys](https://login.tailscale.com/admin/settings/keys) — use **reusable + pre-authorized**, not ephemeral.
 
    > **Auth key expiry:** Reusable Tailscale auth keys expire after 90 days by default.
-   > If rebuilding months after the initial deploy, generate a fresh key at
-   > login.tailscale.com/admin/settings/keys and update `TF_VAR_tailscale_auth_key`
-   > in `config/inputs.sh`.
+   > Generate a fresh key at login.tailscale.com/admin/settings/keys
+   > and update `TF_VAR_tailscale_auth_key` in `config/inputs.sh`.
 
 2. Add to `config/inputs.sh`:
    ```bash
@@ -446,7 +445,7 @@ ls $CONFIG_DIR/docker/docker-compose.yml
 docker login ghcr.io -u YOUR_GITHUB_USERNAME
 ```
 
-### SSH Host Key Changed (after rebuild)
+### SSH Host Key Changed
 
 **Cause:** Destroyed and re-provisioned the VPS — new server has a different
 host key at the same public IP.
@@ -458,22 +457,6 @@ host key at the same public IP.
 ```bash
 ssh-keygen -R <old_vps_ip>
 # Then retry — SSH will prompt you to accept the new key.
-```
-
-### Stale Tailscale Machine After Rebuild
-
-**Cause:** After destroying a Tailscale-enabled VPS, the old `openclaw-prod`
-machine stays in the tailnet. The new VPS registers as `openclaw-prod-1`.
-
-**Fix:** Delete the stale machine from the Tailscale admin console before or
-after running `make apply`:
-
-  <https://login.tailscale.com/admin/machines>
-
-Then verify the new node has the correct name:
-
-```bash
-make tailscale-status
 ```
 
 ### API Billing Error
