@@ -220,7 +220,28 @@ Tailscale creates a private WireGuard mesh so SSH is reachable only from devices
    source config/inputs.sh && make plan && make apply
    ```
 
-After step 4, all `make` commands (`make ssh`, `make deploy`, `make status`, etc.) connect via `openclaw-prod` on your tailnet — no IP to track down.
+5. **Update `openclaw.json`** in your openclaw-docker-config repo to enable Tailscale-based gateway auth:
+   ```json
+   {
+     "gateway": {
+       "auth": {
+         "allowTailscale": true
+       },
+       "controlUi": {
+         "allowInsecureAuth": true
+       }
+     }
+   }
+   ```
+   Then push and restart:
+   ```bash
+   make push-config deploy
+   ```
+
+   > `allowTailscale` authenticates dashboard users via Tailscale identity headers.
+   > `allowInsecureAuth` lets the control UI authenticate over plain HTTP — safe because Tailscale Serve terminates HTTPS externally.
+
+After step 5, all `make` commands (`make ssh`, `make deploy`, `make status`, etc.) connect via `openclaw-prod` on your tailnet — no IP to track down.
 
 > **Recovery:** If Tailscale fails, use the [Hetzner web console](https://console.hetzner.cloud/) for emergency TTY access to the server.
 
