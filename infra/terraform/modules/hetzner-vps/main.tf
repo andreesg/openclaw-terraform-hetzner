@@ -41,6 +41,17 @@ resource "hcloud_firewall" "main" {
     }
   }
 
+  # Allow Tailscale UDP (if enabled)
+  dynamic "rule" {
+    for_each = var.enable_tailscale ? [1] : []
+    content {
+      direction  = "in"
+      protocol   = "udp"
+      port       = "41641"
+      source_ips = ["0.0.0.0/0", "::/0"]
+    }
+  }
+
   # Allow all outbound traffic
   rule {
     direction       = "out"

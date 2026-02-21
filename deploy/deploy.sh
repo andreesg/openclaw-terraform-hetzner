@@ -18,7 +18,8 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 
 VPS_USER="openclaw"
-SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
+SSH_OPTS=(-o StrictHostKeyChecking=accept-new -i "$SSH_KEY")
 TERRAFORM_DIR="infra/terraform/envs/prod"
 
 # -----------------------------------------------------------------------------
@@ -56,7 +57,7 @@ echo ""
 # Deploy on VPS
 # -----------------------------------------------------------------------------
 
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" bash -s << 'REMOTE_SCRIPT'
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" bash -s << 'REMOTE_SCRIPT'
 
 # Colors
 G='\033[0;32m'
@@ -139,5 +140,17 @@ done < <(docker compose ps --format '{{.Name}}\t{{.Status}}' 2>/dev/null)
 
 echo ""
 echo -e "${G}Deploy complete${NC}"
+
+# Tailscale Serve — expose gateway on tailnet (idempotent, persists across reboots)
+if command -v tailscale &> /dev/null; then
+    echo ""
+    echo -e "${BOLD}Tailscale Serve${NC}"
+    echo ""
+    sudo tailscale serve --bg 18789 > /dev/null 2>&1 || true
+    SERVE_URL=$(sudo tailscale serve status 2>/dev/null | grep -o 'https://[^ ]*' | head -1 || true)
+    if [[ -n "$SERVE_URL" ]]; then
+        echo -e "  ${G}●${NC} ${SERVE_URL}"
+    fi
+fi
 echo ""
 REMOTE_SCRIPT

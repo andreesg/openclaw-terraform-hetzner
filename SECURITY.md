@@ -34,23 +34,41 @@ This project deploys cloud infrastructure. Please be aware of:
    - Use separate tokens for different environments
 
 2. **SSH Access**
-   - The default configuration allows SSH from `0.0.0.0/0` (anywhere)
-   - **Change this** in `config/inputs.sh` to your IP: `["YOUR_IP/32"]`
-   - Use SSH keys, never passwords
-   - Keep your private keys secure
+   - Default opens SSH (port 22) to `0.0.0.0/0` — restrict before production
+   - **Minimum:** restrict to your IP via `TF_VAR_ssh_allowed_cidrs`
+   - **Best:** enable Tailscale (see section 3) and set `TF_VAR_ssh_allowed_cidrs='[]'` so SSH is invisible to the public internet entirely
+   - Hetzner Ubuntu images disable password authentication by default; the VPS uses key-only auth
+   - Protect your SSH private key — it is the only credential that grants access
 
-3. **Firewall Rules**
-   - Review the firewall configuration in `infra/terraform/modules/hetzner-vps/main.tf`
-   - Only open ports you need
-   - Gateway binds to `127.0.0.1` by default (localhost only)
-   - Use SSH tunneling to access the gateway
+3. **Tailscale VPN (Recommended)**
 
-4. **Cloud-Init Scripts**
+   Tailscale builds a WireGuard-encrypted mesh network between your devices and the VPS. When enabled, the server gets a private `100.x.x.x` address that is only reachable from devices authenticated to your tailnet.
+
+   **What this protects against:**
+   - SSH scanners and brute-force bots — they see a closed port on the public IP
+   - Network-level eavesdropping — all traffic is end-to-end WireGuard encrypted, regardless of the network you're connecting from (hotel WiFi, mobile data, etc.)
+   - Accidental gateway exposure — Tailscale Serve makes the OpenClaw dashboard accessible only to authenticated tailnet members, not the public internet
+
+   **What this does not protect against:**
+   - A compromised device that is already enrolled in your tailnet
+   - A stolen or leaked Tailscale auth key (mitigate with expiring keys and MFA)
+   - Vulnerabilities in OpenClaw or its dependencies
+
+   Tailscale is installed automatically on first boot when `TF_VAR_enable_tailscale=true` is set. See [Firewall Rules](README.md#firewall-rules) in the README for the step-by-step setup.
+
+4. **Firewall Rules**
+   - Inbound by default: SSH (22/tcp) only — no HTTP/HTTPS exposed at the Hetzner level
+   - With Tailscale: additionally opens UDP 41641 for WireGuard; SSH port can then be closed entirely
+   - Gateway binds to `127.0.0.1` (localhost only) and is never directly reachable from the internet
+   - Review `infra/terraform/modules/hetzner-vps/main.tf` for the full rule set
+
+5. **Cloud-Init Scripts**
    - Review `infra/cloud-init/user-data.yml.tpl` before deploying
    - Runs with root privileges on first boot
    - Modifying this can affect server security
+   - Tailscale installation uses official packages from the Tailscale repository
 
-5. **State Files**
+6. **State Files**
    - Terraform state contains sensitive data
    - Use remote state backend (S3) for production
    - Encrypt state files at rest
@@ -58,24 +76,34 @@ This project deploys cloud infrastructure. Please be aware of:
 
 ### Application Security
 
-6. **OpenClaw Gateway**
+7. **OpenClaw Gateway**
    - Set strong `OPENCLAW_GATEWAY_TOKEN` in `secrets/openclaw.env`
    - Use SSH tunneling to access gateway (don't expose publicly)
    - Keep OpenClaw updated to latest version
 
-7. **API Keys**
+8. **API Keys**
    - Claude/Anthropic API keys grant access to your account
    - Monitor usage and set spending limits
    - Use setup-token (subscription) instead of API keys when possible
    - Telegram bot tokens should be kept secret
 
+### Tailscale Security
+
+9. **Tailscale Auth Keys**
+   - Generate auth keys at [login.tailscale.com/admin/settings/keys](https://login.tailscale.com/admin/settings/keys)
+   - Use reusable, pre-authorized keys for easier deployment
+   - Set expiration (90 days recommended) and rotate regularly
+   - Never commit auth keys to version control
+   - Stored as a sensitive Terraform variable (`tailscale_auth_key`)
+   - Enable MFA on your Tailscale account
+
 ### Cost Security
 
-8. **Resource Limits**
-   - Set up billing alerts in Hetzner Console
-   - Start with small server types (cx23) for testing
-   - Monitor resource usage regularly
-   - Destroy test deployments when done (`make destroy`)
+10. **Resource Limits**
+    - Set up billing alerts in Hetzner Console
+    - Start with small server types (cx23) for testing
+    - Monitor resource usage regularly
+    - Destroy test deployments when done (`make destroy`)
 
 ## Best Practices
 
@@ -99,7 +127,7 @@ This project deploys cloud infrastructure. Please be aware of:
 ### By Design
 
 - Cloud-init runs with root privileges (standard for server provisioning)
-- SSH access is initially broad (users should narrow this)
+- SSH access is initially broad (users should narrow this per the README)
 - Gateway uses API tokens for authentication (consider adding TLS)
 
 ### Out of Scope
@@ -107,8 +135,9 @@ This project deploys cloud infrastructure. Please be aware of:
 This project does NOT provide:
 - DDoS protection (use Hetzner's DDoS protection or Cloudflare)
 - Automated security patching (you must update OpenClaw manually)
-- Intrusion detection (consider adding fail2ban or similar)
+- Intrusion detection (consider adding fail2ban)
 - Backup encryption (implement separately if needed)
+- Automatic security updates (unattended-upgrades)
 
 ## Security Updates
 

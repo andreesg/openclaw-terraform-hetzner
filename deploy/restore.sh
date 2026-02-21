@@ -18,7 +18,8 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 
 VPS_USER="openclaw"
-SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
+SSH_OPTS=(-o StrictHostKeyChecking=accept-new -i "$SSH_KEY")
 TERRAFORM_DIR="infra/terraform/envs/prod"
 
 # -----------------------------------------------------------------------------
@@ -91,7 +92,7 @@ echo ""
 echo "Restoring backup..."
 echo ""
 
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" bash -s "$BACKUP_FILE" << 'REMOTE_SCRIPT'
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" bash -s "$BACKUP_FILE" << 'REMOTE_SCRIPT'
 set -euo pipefail
 
 BACKUP_FILE="$1"

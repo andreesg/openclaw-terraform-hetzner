@@ -18,7 +18,8 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 
 VPS_USER="openclaw"
-SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
+SSH_OPTS=(-o StrictHostKeyChecking=accept-new -i "$SSH_KEY")
 TERRAFORM_DIR="infra/terraform/envs/prod"
 
 # Local path to the openclaw-config repository
@@ -77,13 +78,13 @@ echo ""
 
 echo "[...] Pushing config files to VPS..."
 
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" "mkdir -p $REMOTE_CONFIG_DIR && chmod 700 $REMOTE_CONFIG_DIR"
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" "mkdir -p $REMOTE_CONFIG_DIR && chmod 700 $REMOTE_CONFIG_DIR"
 
 FILE_COUNT=0
 for file in "$CONFIG_DIR"/config/*; do
     if [[ -f "$file" ]]; then
         filename=$(basename "$file")
-        scp $SSH_OPTS "$file" "$VPS_USER@$VPS_IP:$REMOTE_CONFIG_DIR/$filename"
+        scp "${SSH_OPTS[@]}" "$file" "$VPS_USER@$VPS_IP:$REMOTE_CONFIG_DIR/$filename"
         echo "[OK] Pushed $filename"
         FILE_COUNT=$((FILE_COUNT + 1))
     fi
@@ -95,7 +96,7 @@ if [[ $FILE_COUNT -eq 0 ]]; then
 fi
 
 # Set secure permissions on config files only (not subdirectories)
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" "find $REMOTE_CONFIG_DIR -maxdepth 1 -type f -exec chmod 600 {} +"
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" "find $REMOTE_CONFIG_DIR -maxdepth 1 -type f -exec chmod 600 {} +"
 
 echo ""
 echo "[OK] Pushed $FILE_COUNT config file(s)"
@@ -107,7 +108,7 @@ echo "[OK] Pushed $FILE_COUNT config file(s)"
 echo ""
 echo "[...] Restarting container..."
 
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" \
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" \
     "cd ~/openclaw && docker compose restart 2>/dev/null || echo '[SKIP] No running container to restart'"
 
 echo ""

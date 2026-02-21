@@ -25,7 +25,8 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 
 VPS_USER="openclaw"
-SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
+SSH_OPTS=(-o StrictHostKeyChecking=accept-new -i "$SSH_KEY")
 TERRAFORM_DIR="infra/terraform/envs/prod"
 
 CLAUDE_SETUP_TOKEN="${CLAUDE_SETUP_TOKEN:-}"
@@ -79,7 +80,7 @@ AUTH_FILE="\$HOME/.openclaw/agents/main/agent/auth-profiles.json"
 
 echo "[...] Writing auth profile to VPS..."
 
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" bash -s <<REMOTE_SCRIPT
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" bash -s <<REMOTE_SCRIPT
 set -euo pipefail
 mkdir -p "$AUTH_DIR"
 cat > "$AUTH_FILE" << 'AUTHEOF'
@@ -108,7 +109,7 @@ REMOTE_SCRIPT
 echo ""
 echo "[...] Restarting container..."
 
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" \
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" \
     "cd ~/openclaw && docker compose restart 2>/dev/null || echo '[SKIP] No running container to restart'"
 
 echo ""

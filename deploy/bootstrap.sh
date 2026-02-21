@@ -29,7 +29,8 @@ GHCR_TOKEN="${GHCR_TOKEN:-}"
 VPS_USER="openclaw"
 
 # SSH options
-SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
+SSH_OPTS=(-o StrictHostKeyChecking=accept-new -i "$SSH_KEY")
 
 # Terraform directory (relative to repo root)
 TERRAFORM_DIR="infra/terraform/envs/prod"
@@ -84,7 +85,7 @@ echo ""
 # -----------------------------------------------------------------------------
 
 echo "Verifying SSH connectivity..."
-if ! ssh $SSH_OPTS "$VPS_USER@$VPS_IP" "echo 'SSH connection successful'" 2>/dev/null; then
+if ! ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" "echo 'SSH connection successful'" 2>/dev/null; then
     echo "Error: Cannot connect to $VPS_USER@$VPS_IP"
     echo "Make sure:"
     echo "  1. The VPS is running (check: terraform output)"
@@ -99,7 +100,7 @@ fi
 
 echo ""
 echo "Waiting for cloud-init to complete..."
-if ssh $SSH_OPTS "$VPS_USER@$VPS_IP" "command -v cloud-init >/dev/null 2>&1 && timeout 300 cloud-init status --wait >/dev/null 2>&1"; then
+if ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" "command -v cloud-init >/dev/null 2>&1 && timeout 300 cloud-init status --wait >/dev/null 2>&1"; then
     echo "[OK] Cloud-init completed"
 else
     echo "[WARN] Could not confirm cloud-init completion"
@@ -113,7 +114,7 @@ fi
 echo ""
 if [[ -n "$GHCR_USERNAME" ]] && [[ -n "$GHCR_TOKEN" ]]; then
     echo "Logging in to GitHub Container Registry..."
-    ssh $SSH_OPTS "$VPS_USER@$VPS_IP" \
+    ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" \
         "echo '$GHCR_TOKEN' | docker login ghcr.io -u '$GHCR_USERNAME' --password-stdin"
     echo "[OK] GHCR login successful"
 else
@@ -127,7 +128,7 @@ fi
 
 echo ""
 echo "Creating directories on VPS..."
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" bash -s << 'REMOTE_SCRIPT'
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" bash -s << 'REMOTE_SCRIPT'
 set -euo pipefail
 
 mkdir -p "$HOME/openclaw"
@@ -150,7 +151,7 @@ REMOTE_SCRIPT
 
 echo ""
 echo "Copying docker-compose.yml to VPS..."
-scp $SSH_OPTS "$CONFIG_DIR/docker/docker-compose.yml" "$VPS_USER@$VPS_IP:~/openclaw/docker-compose.yml"
+scp "${SSH_OPTS[@]}" "$CONFIG_DIR/docker/docker-compose.yml" "$VPS_USER@$VPS_IP:~/openclaw/docker-compose.yml"
 echo "[OK] docker-compose.yml deployed to ~/openclaw/"
 
 # -----------------------------------------------------------------------------
@@ -159,8 +160,8 @@ echo "[OK] docker-compose.yml deployed to ~/openclaw/"
 
 echo ""
 echo "Copying backup script to VPS..."
-scp $SSH_OPTS ./deploy/backup.sh "$VPS_USER@$VPS_IP:~/scripts/backup.sh"
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" "chmod +x \$HOME/scripts/backup.sh"
+scp "${SSH_OPTS[@]}" ./deploy/backup.sh "$VPS_USER@$VPS_IP:~/scripts/backup.sh"
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" "chmod +x \$HOME/scripts/backup.sh"
 echo "[OK] Backup script copied to ~/scripts/backup.sh"
 
 # -----------------------------------------------------------------------------
@@ -170,7 +171,7 @@ echo "[OK] Backup script copied to ~/scripts/backup.sh"
 echo ""
 echo "Setting up systemd timers for daily backups..."
 
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" bash -s << 'REMOTE_SCRIPT'
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" bash -s << 'REMOTE_SCRIPT'
 set -euo pipefail
 
 mkdir -p "$HOME/.config/systemd/user"
@@ -276,5 +277,5 @@ echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Connecting to VPS..."
-    ssh $SSH_OPTS "$VPS_USER@$VPS_IP"
+    ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP"
 fi

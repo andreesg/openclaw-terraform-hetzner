@@ -6,6 +6,7 @@
 SHELL := /bin/bash
 .PHONY: init plan apply destroy ssh ssh-root tunnel output ip fmt validate clean help \
         bootstrap deploy push-env push-config setup-auth backup-now restore logs status \
+        tailscale-status tailscale-ip tailscale-up \
         workspace-sync
 
 # Default target
@@ -15,8 +16,10 @@ SHELL := /bin/bash
 ENV ?= prod
 TERRAFORM_DIR := infra/terraform/envs/$(ENV)
 
-# Server IP - can be overridden or read from Terraform
+# Server IP - read from Terraform state
+# NoteIf using Tailscale, set SERVER_IP="openclaw-prod" in config/inputs.sh.
 SERVER_IP ?= $(shell cd $(TERRAFORM_DIR) && terraform output -raw server_ip 2>/dev/null)
+SSH_KEY ?= ~/.ssh/id_rsa
 
 # Colors
 GREEN  := \033[0;32m
@@ -65,18 +68,18 @@ validate: ## Validate Terraform configuration
 
 ssh: ## SSH into the server as the openclaw user
 	@echo -e "$(GREEN)[INFO]$(NC) Connecting to $(SERVER_IP)..."
-	ssh openclaw@$(SERVER_IP)
+	ssh -i $(SSH_KEY) openclaw@$(SERVER_IP)
 
 ssh-root: ## SSH into the server as root
 	@echo -e "$(YELLOW)[WARN]$(NC) Connecting as root to $(SERVER_IP)..."
-	ssh root@$(SERVER_IP)
+	ssh -i $(SSH_KEY) root@$(SERVER_IP)
 
 tunnel: ## Open SSH tunnel to OpenClaw gateway (localhost:18789)
 	@echo -e "$(GREEN)[INFO]$(NC) Opening tunnel to $(SERVER_IP):18789..."
 	@echo -e "  Gateway available at $(BOLD)http://localhost:18789$(NC)"
 	@echo -e "  $(BOLD)Ctrl+C$(NC) to close"
 	@echo ""
-	@ssh -N -L 18789:127.0.0.1:18789 openclaw@$(SERVER_IP)
+	@ssh -i $(SSH_KEY) -N -L 18789:127.0.0.1:18789 openclaw@$(SERVER_IP)
 
 output: ## Show all Terraform outputs
 	@cd $(TERRAFORM_DIR) && terraform output
@@ -94,27 +97,27 @@ clean: ## Clean up Terraform files (keeps state)
 
 bootstrap: ## Bootstrap OpenClaw on the VPS (run once after apply)
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Bootstrapping OpenClaw on VPS..."
-	@./deploy/bootstrap.sh
+	@./deploy/bootstrap.sh $(SERVER_IP)
 
 deploy: ## Pull latest image and restart container on the VPS
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Deploying latest image to VPS..."
-	@./deploy/deploy.sh
+	@./deploy/deploy.sh $(SERVER_IP)
 
 push-env: ## Push secrets/openclaw.env to the VPS
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Pushing secrets to VPS..."
-	@./scripts/push-env.sh
+	@./scripts/push-env.sh $(SERVER_IP)
 
 push-config: ## Push config files from CONFIG_DIR to the VPS
 	@echo -e "$(BLUE)[DEPLOY]$(NC) Pushing config to VPS..."
-	@./scripts/push-config.sh
+	@./scripts/push-config.sh $(SERVER_IP)
 
 setup-auth: ## Set up Claude subscription auth on the VPS
 	@echo -e "$(BLUE)[AUTH]$(NC) Setting up Claude subscription auth..."
-	@./scripts/setup-auth.sh
+	@./scripts/setup-auth.sh $(SERVER_IP)
 
 backup-now: ## Run backup now on the VPS
 	@echo -e "$(GREEN)[INFO]$(NC) Running backup on $(SERVER_IP)..."
-	ssh -o StrictHostKeyChecking=accept-new openclaw@$(SERVER_IP) \
+	ssh -i $(SSH_KEY) -o StrictHostKeyChecking=accept-new openclaw@$(SERVER_IP) \
 		'bash -s' < ./deploy/backup.sh
 
 restore: ## Restore from backup (use BACKUP=filename)
@@ -126,21 +129,35 @@ ifndef BACKUP
 	@echo "  ssh openclaw@$(SERVER_IP) 'ls ~/backups/'"
 	@exit 1
 endif
-	./deploy/restore.sh $(BACKUP)
+	./deploy/restore.sh $(BACKUP) $(SERVER_IP)
 
 logs: ## Stream Docker logs from the VPS
 	@echo -e "$(GREEN)[INFO]$(NC) Streaming logs from VPS..."
-	@./deploy/logs.sh
+	@./deploy/logs.sh $(SERVER_IP)
 
-status: ## Check OpenClaw status on the VPS
+status: ## Check OpenClaw status on the VPS (includes Tailscale if enabled)
 	@echo -e "$(GREEN)[INFO]$(NC) Checking VPS status..."
-	@./deploy/status.sh
+	@./deploy/status.sh $(SERVER_IP)
 
 workspace-sync: ## Sync workspace to GitHub now
 	@echo -e "$(GREEN)[INFO]$(NC) Syncing workspace on $(SERVER_IP)..."
-	ssh -o StrictHostKeyChecking=accept-new openclaw@$(SERVER_IP) \
+	ssh -i $(SSH_KEY) -o StrictHostKeyChecking=accept-new openclaw@$(SERVER_IP) \
 		'cd ~/openclaw && docker compose exec workspace-sync workspace-sync.sh'
 
+# =============================================================================
+# Tailscale Commands
+# =============================================================================
+
+tailscale-status: ## Show detailed Tailscale status and peers
+	@echo -e "$(GREEN)[INFO]$(NC) Checking Tailscale status..."
+	@ssh -i $(SSH_KEY) openclaw@$(SERVER_IP) 'sudo tailscale status'
+
+tailscale-ip: ## Get Tailscale IP address
+	@ssh -i $(SSH_KEY) openclaw@$(SERVER_IP) 'tailscale ip -4'
+
+tailscale-up: ## Manually authenticate Tailscale
+	@echo -e "$(GREEN)[INFO]$(NC) Authenticating Tailscale..."
+	@ssh -i $(SSH_KEY) -t openclaw@$(SERVER_IP) 'sudo tailscale up'
 
 # =============================================================================
 # Help
@@ -177,6 +194,11 @@ help: ## Show this help message
 	@echo -e "  $(GREEN)workspace-sync$(NC)  Sync workspace to GitHub now"
 	@echo -e "  $(GREEN)output$(NC)          Show Terraform outputs"
 	@echo -e "  $(GREEN)ip$(NC)              Show server IP"
+	@echo ""
+	@echo -e "$(BOLD)Tailscale:$(NC)"
+	@echo -e "  $(GREEN)tailscale-status$(NC)  Show Tailscale status and peers"
+	@echo -e "  $(GREEN)tailscale-ip$(NC)      Get Tailscale IP address"
+	@echo -e "  $(GREEN)tailscale-up$(NC)      Manually authenticate Tailscale"
 	@echo ""
 	@echo -e "$(BOLD)Quick Start:$(NC)"
 	@echo "  source config/inputs.sh"

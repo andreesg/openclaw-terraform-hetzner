@@ -73,3 +73,13 @@ variable "cloud_init_user_data" {
   description = "Rendered cloud-init user data content"
   type        = string
 }
+
+# ============================================
+# Security Configuration
+# ============================================
+
+variable "enable_tailscale" {
+  description = "Install and configure Tailscale VPN"
+  type        = bool
+  default     = false
+}

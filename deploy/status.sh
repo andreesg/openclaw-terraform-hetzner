@@ -9,7 +9,8 @@
 #   1. Shows Docker Compose container status
 #   2. Shows recent container logs
 #   3. Shows system info (disk, memory, uptime)
-#   4. Shows backup status
+#   4. Shows Tailscale VPN status (if installed)
+#   5. Shows backup status
 # =============================================================================
 
 set -euo pipefail
@@ -19,7 +20,8 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 
 VPS_USER="openclaw"
-SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
+SSH_OPTS=(-o StrictHostKeyChecking=accept-new -i "$SSH_KEY")
 TERRAFORM_DIR="infra/terraform/envs/prod"
 
 # -----------------------------------------------------------------------------
@@ -57,7 +59,7 @@ echo ""
 # Check status on VPS
 # -----------------------------------------------------------------------------
 
-ssh $SSH_OPTS "$VPS_USER@$VPS_IP" bash -s << 'REMOTE_SCRIPT'
+ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_IP" bash -s << 'REMOTE_SCRIPT'
 
 # Colors
 G='\033[0;32m'
@@ -139,6 +141,30 @@ echo -e "  ${G}Memory:${NC}  $MEM_INFO"
 # Uptime
 UP=$(uptime | sed 's/.*up /up /' | sed 's/,.*user.*//')
 echo -e "  ${G}Uptime:${NC}  $UP"
+
+# -----------------------------------------------------------------------------
+# Tailscale status
+# -----------------------------------------------------------------------------
+
+if command -v tailscale &> /dev/null; then
+    echo ""
+    echo -e "${BOLD}Tailscale${NC}"
+    echo ""
+
+    TS_STATE=$(sudo tailscale status --json 2>/dev/null | jq -r '.BackendState' 2>/dev/null || echo "unknown")
+    TS_IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
+
+    if [ "$TS_STATE" = "Running" ]; then
+        echo -e "  ${G}Status:${NC}  Connected"
+        echo -e "  ${G}IP:${NC}      $TS_IP"
+    elif [ "$TS_STATE" = "NeedsLogin" ]; then
+        echo -e "  ${Y}Status:${NC}  Not authenticated"
+        echo -e "  ${DIM}Run 'sudo tailscale up' to authenticate${NC}"
+    else
+        echo -e "  ${Y}Status:${NC}  $TS_STATE"
+        echo -e "  ${DIM}IP:      $TS_IP${NC}"
+    fi
+fi
 
 # -----------------------------------------------------------------------------
 # Backup status

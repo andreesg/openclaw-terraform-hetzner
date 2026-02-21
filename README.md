@@ -23,7 +23,10 @@ For information about OpenClaw itself, see the [OpenClaw documentation](https://
 1. **Terraform** >= 1.5 ([Installation Guide](https://developer.hashicorp.com/terraform/install))
 2. **Hetzner Cloud Account** with API token ([Console](https://console.hetzner.cloud/))
 3. **Hetzner Object Storage** for Terraform state (optional but recommended)
-4. **SSH Key** at `~/.ssh/id_rsa.pub`
+4. **SSH Key** at `~/.ssh/id_rsa` (default, configurable via `SSH_KEY` environment variable)
+   - The private key (`~/.ssh/id_rsa`) is required for SSH connections
+   - The public key (`~/.ssh/id_rsa.pub`) must be uploaded to Hetzner Cloud
+   - To use a different key, set `SSH_KEY` in your environment: `export SSH_KEY=~/.ssh/custom_key`
 5. **Docker configuration repo**: [openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config)
 
 ## Quick Start
@@ -46,6 +49,9 @@ Required variables in `config/inputs.sh`:
 - `HCLOUD_TOKEN` - Hetzner Cloud API token
 - `TF_VAR_ssh_key_fingerprint` - SSH key fingerprint from Hetzner
 - `CONFIG_DIR` - Path to your openclaw-docker-config repository
+- `SERVER_IP` - Address that scripts use to SSH into the VPS. Set to `openclaw-prod` when using Tailscale (MagicDNS hostname, stable across rebuilds). Leave unset to auto-detect from Terraform output (only works when public SSH is open).
+
+> **Tailscale (optional, recommended):** Set `TF_VAR_enable_tailscale=true` and `TF_VAR_tailscale_auth_key` to install Tailscale automatically on first boot — it lets you remove SSH from the public internet entirely. See [Firewall Rules](#firewall-rules).
 
 ### 3. Deploy Infrastructure
 
@@ -73,6 +79,12 @@ make logs
 Access the gateway via SSH tunnel:
 ```bash
 make tunnel  # Opens tunnel on localhost:18789
+```
+
+If you enabled Tailscale, confirm it connected before closing public SSH access:
+```bash
+make tailscale-status  # node should appear as connected
+make tailscale-ip      # note your Tailscale IP (e.g. 100.x.x.x)
 ```
 
 ## Architecture
@@ -137,6 +149,13 @@ make backup-now # Trigger backup immediately
 make restore    # Restore from backup (BACKUP=filename)
 ```
 
+**Tailscale:**
+```bash
+make tailscale-status   # Check Tailscale status (uses public IP — run before closing port 22)
+make tailscale-ip       # Get Tailscale IP (uses public IP — run before closing port 22)
+make tailscale-up       # Manually authenticate Tailscale
+```
+
 **Configuration:**
 ```bash
 make push-env    # Push environment variables
@@ -159,9 +178,9 @@ See [Hetzner server types](https://www.hetzner.com/cloud#pricing).
 
 ### Firewall Rules
 
-Default: SSH only from `0.0.0.0/0`
+By default SSH (port 22) is open to `0.0.0.0/0`. Restrict this before going to production.
 
-To restrict SSH access:
+**Option A — Restrict to your IP:**
 ```bash
 # In config/inputs.sh
 export TF_VAR_ssh_allowed_cidrs='["203.0.113.50/32"]'
@@ -171,6 +190,66 @@ Then apply:
 ```bash
 source config/inputs.sh && make plan && make apply
 ```
+
+**Option B — Tailscale VPN (recommended):**
+
+Tailscale creates a private WireGuard mesh so SSH is reachable only from devices on your tailnet — the public IP has no open SSH port.
+
+1. Get an auth key at [login.tailscale.com/admin/settings/keys](https://login.tailscale.com/admin/settings/keys) — use **reusable + pre-authorized** keys, not ephemeral.
+
+   > **Auth key expiry:** Reusable Tailscale auth keys expire after 90 days by default.
+   > Generate a fresh key at login.tailscale.com/admin/settings/keys
+   > and update `TF_VAR_tailscale_auth_key` in `config/inputs.sh`.
+
+2. Add to `config/inputs.sh`:
+   ```bash
+   export TF_VAR_enable_tailscale=true
+   export TF_VAR_tailscale_auth_key="tskey-auth-xxxxxxxxxxxxx"
+   ```
+
+3. Deploy. Tailscale is installed automatically on first boot. Then verify it's working before closing public access:
+   ```bash
+   source config/inputs.sh && make plan && make apply
+   make tailscale-status          # confirm node is connected
+   make tailscale-ip              # note your Tailscale IP
+   ssh -i $SSH_KEY openclaw@<tailscale-ip>  # confirm Tailscale SSH works
+   ```
+
+4. Remove public SSH and point scripts at the Tailscale hostname:
+   ```bash
+   # In config/inputs.sh
+   export TF_VAR_ssh_allowed_cidrs='[]'
+   export SERVER_IP="openclaw-prod"   # Tailscale MagicDNS — stable across rebuilds
+   source config/inputs.sh && make plan && make apply
+   ```
+
+   > **Make sure to always source `config/inputs.sh` before running `make` commands so the updated `SERVER_IP` is used.**
+
+5. **Update `openclaw.json`** in your openclaw-docker-config repo to enable Tailscale-based gateway auth:
+   ```json
+   {
+     "gateway": {
+       "auth": {
+         "allowTailscale": true
+       },
+       "controlUi": {
+         "allowInsecureAuth": true
+       }
+     }
+   }
+   ```
+   Then push and restart:
+   ```bash
+   make push-config deploy
+   ```
+
+   > `allowTailscale` authenticates dashboard users via Tailscale identity headers.
+   >
+   > `allowInsecureAuth` lets the control UI authenticate over plain HTTP — safe because it's only availale in your private tailnet.
+
+After step 5, all `make` commands (`make ssh`, `make deploy`, `make status`, etc.) connect via `openclaw-prod` on your tailnet — no IP to track down.
+
+> **Recovery:** If Tailscale fails, just delete the Firewall
 
 ### Remote State Backend
 
@@ -300,6 +379,19 @@ make tunnel  # Creates tunnel: localhost:18789 -> VPS:18789
 
 Then open `http://localhost:18789` in your browser. The gateway will ask for your **Gateway Token** — paste your `OPENCLAW_GATEWAY_TOKEN` value (from `secrets/openclaw.env`) into the settings field to authenticate.
 
+**Access via Tailscale Serve** (if Tailscale is enabled):
+```bash
+ssh -i $SSH_KEY openclaw@<tailscale-ip>
+sudo tailscale serve --bg 18789
+sudo tailscale serve status  # prints your HTTPS URL
+```
+
+Dashboard is then available at `https://openclaw-prod.<tailnet>.ts.net` from any device on your tailnet — no tunnel needed.
+
+> **Note:** Use Serve, not Funnel. Funnel makes the service publicly accessible on the internet.
+> See [OpenClaw Tailscale gateway docs](https://docs.openclaw.ai/gateway/tailscale)
+> for full configuration options including the `allowTailscale` setting.
+
 ## Troubleshooting
 
 ### Terraform Init Fails
@@ -324,6 +416,7 @@ docker compose -f ~/openclaw/docker-compose.yml ps
 ```
 
 **Common causes:**
+
 - Missing environment variables in `.env`
 - Invalid OpenClaw configuration
 - API key issues
@@ -339,13 +432,26 @@ make deploy      # Restart
 
 **Check firewall rules:**
 ```bash
-# Verify your IP is allowed
 grep TF_VAR_ssh_allowed_cidrs config/inputs.sh
-
 # Check actual firewall
 make ssh-root
 ufw status
 ```
+
+If `ssh_allowed_cidrs='[]'` (Tailscale-only mode), `make ssh` connects via the public IP and will time out, that's expected. SSH via your Tailscale IP instead:
+```bash
+ssh -i $SSH_KEY openclaw@<tailscale-ip>
+```
+
+Or - as stated above - use the `SERVER_IP` variable to point `make ssh` at the Tailscale hostname:
+```bash
+# In config/inputs.sh
+export TF_VAR_ssh_allowed_cidrs='[]'
+export SERVER_IP="openclaw-prod"   # Tailscale MagicDNS — stable across rebuilds
+source config/inputs.sh && make plan && make apply
+```
+
+Emergency access: [Hetzner web console](https://console.hetzner.cloud/) → server → Console.
 
 ### Permission Denied on ~/.openclaw
 
@@ -368,6 +474,20 @@ ls $CONFIG_DIR/docker/docker-compose.yml
 
 # Verify GHCR credentials
 docker login ghcr.io -u YOUR_GITHUB_USERNAME
+```
+
+### SSH Host Key Changed
+
+**Cause:** Destroyed and re-provisioned the VPS — new server has a different
+host key at the same public IP.
+
+**Error:** `WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!`
+
+**Fix:**
+
+```bash
+ssh-keygen -R <old_vps_ip>
+# Then retry — SSH will prompt you to accept the new key.
 ```
 
 ### API Billing Error
@@ -395,12 +515,16 @@ cat ~/.openclaw/agents/main/agent/auth-profiles.json
 
 ## Security Considerations
 
+See [SECURITY.md](SECURITY.md) for the full security policy and threat model.
+
 ### SSH Access
 
-- Default allows SSH from anywhere (`0.0.0.0/0`)
-- **Recommended:** Restrict to your IP in `config/inputs.sh`
+- Default allows SSH from anywhere (`0.0.0.0/0`) — restrict before production
+- **Option A:** Restrict to your IP via `TF_VAR_ssh_allowed_cidrs`
+- **Option B:** Enable Tailscale and set `ssh_allowed_cidrs='[]'` — zero public SSH exposure
 - Use SSH keys, not passwords
 - Rotate keys regularly
+- See [Firewall Rules](#firewall-rules) for setup steps
 
 ### Secrets Management
 
@@ -411,10 +535,9 @@ cat ~/.openclaw/agents/main/agent/auth-profiles.json
 
 ### Firewall
 
-- Default configuration: SSH only
-- Gateway binds to `127.0.0.1` (localhost)
-- Access via SSH tunnel, not direct exposure
-- Review `infra/terraform/modules/hetzner-vps/main.tf` for firewall rules
+- Gateway binds to `127.0.0.1` (localhost only) — never exposed directly
+- Access via SSH tunnel or Tailscale Serve
+- Review `infra/terraform/modules/hetzner-vps/main.tf` for the full firewall rule set
 
 ### API Keys
 

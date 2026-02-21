@@ -54,3 +54,8 @@ output "ssh_command_root" {
   description = "SSH command to connect as root"
   value       = "ssh root@${hcloud_server.main.ipv4_address}"
 }
+
+output "tailscale_enabled" {
+  description = "Whether Tailscale is enabled"
+  value       = var.enable_tailscale
+}
