@@ -87,6 +87,18 @@ else
     exit 1
 fi
 
+# Pre-create workspace directories so Docker doesn't create them as root.
+# When a bind-mount target doesn't exist, Docker creates it owned by root,
+# which causes EACCES errors in the gateway container (runs as uid 1000).
+WORKSPACE_BASE="${OPENCLAW_WORKSPACE_DIR:-$HOME/.openclaw/workspace}"
+if [[ -f docker-compose.yml ]]; then
+    grep -oP '(?<=\$\{OPENCLAW_WORKSPACE_DIR:-/home/openclaw/.openclaw/workspace\}/)\w+(?=:)' docker-compose.yml \
+        | sort -u \
+        | while read -r agent; do
+            mkdir -p "$WORKSPACE_BASE/$agent"
+        done
+fi
+
 # Enable workspace sync profile if any GIT_WORKSPACE_REPO_* is configured
 PROFILES=""
 SYNC_ENABLED=false
