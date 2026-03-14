@@ -137,10 +137,10 @@ status: ## Check OpenClaw status on the VPS (includes Tailscale if enabled)
 	@echo -e "$(GREEN)[INFO]$(NC) Checking VPS status..."
 	@./deploy/status.sh $(SERVER_IP)
 
-workspace-sync: ## Sync workspace to GitHub now
-	@echo -e "$(GREEN)[INFO]$(NC) Syncing workspace on $(SERVER_IP)..."
+workspace-sync: ## Sync all agent workspaces to GitHub now
+	@echo -e "$(GREEN)[INFO]$(NC) Syncing workspaces on $(SERVER_IP)..."
 	ssh -o StrictHostKeyChecking=accept-new openclaw@$(SERVER_IP) \
-		'cd ~/openclaw && docker compose exec workspace-sync workspace-sync.sh'
+		'cd ~/openclaw && for svc in $$(docker compose ps --format "{{.Name}}" 2>/dev/null | grep workspace-sync); do echo "Syncing $$svc..."; docker exec $$svc workspace-sync.sh; done'
 
 # =============================================================================
 # Tailscale Commands
