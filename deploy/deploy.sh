@@ -87,10 +87,10 @@ else
     exit 1
 fi
 
-# Enable workspace sync profile if GIT_WORKSPACE_REPO is configured
+# Enable workspace sync profile if any GIT_WORKSPACE_REPO_* is configured
 PROFILES=""
 SYNC_ENABLED=false
-if [[ -f .env ]] && grep -qE '^GIT_WORKSPACE_REPO=.+' .env; then
+if [[ -f .env ]] && grep -qE '^GIT_WORKSPACE_REPO(_[A-Z]+)?=.+' .env; then
     PROFILES="--profile sync"
     SYNC_ENABLED=true
 fi
@@ -106,11 +106,12 @@ else
     exit 1
 fi
 
-# Stop workspace-sync if it was running but sync is now disabled
+# Stop workspace-sync containers if they were running but sync is now disabled
 if [[ "$SYNC_ENABLED" == "false" ]]; then
     if docker compose ps --format '{{.Name}}' 2>/dev/null | grep -q workspace-sync; then
         echo -ne "  Stopping workspace-sync...  "
-        docker compose stop workspace-sync 2>/dev/null && docker compose rm -f workspace-sync 2>/dev/null
+        docker compose ps --format '{{.Name}}' 2>/dev/null | grep workspace-sync | xargs -r docker compose stop 2>/dev/null
+        docker compose ps -a --format '{{.Name}}' 2>/dev/null | grep workspace-sync | xargs -r docker compose rm -f 2>/dev/null
         echo -e "${G}done${NC}"
     fi
 fi
