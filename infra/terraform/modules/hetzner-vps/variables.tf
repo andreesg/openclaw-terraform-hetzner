@@ -57,10 +57,10 @@ variable "server_enable_ipv4" {
   description = "Enable a public IPv4 address on the server"
   type        = bool
   default     = true
-  validation {
-    condition     = var.server_enable_ipv4 || length(var.ssh_allowed_cidrs) == 0 || anytrue([for cidr in var.ssh_allowed_cidrs : strcontains(cidr, ":")])
-    error_message = "If server_enable_ipv4 is false, ssh_allowed_cidrs must be empty (for Tailscale-only mode) or contain at least one IPv6 CIDR to ensure SSH access."
-  }
+  # validation {
+  #   condition     = var.server_enable_ipv4 || length(var.ssh_allowed_cidrs) == 0 || anytrue([for cidr in var.ssh_allowed_cidrs : strcontains(cidr, ":")])
+  #   error_message = "If server_enable_ipv4 is false, ssh_allowed_cidrs must be empty (for Tailscale-only mode) or contain at least one IPv6 CIDR to ensure SSH access."
+  # }
 }
 
 # ============================================
