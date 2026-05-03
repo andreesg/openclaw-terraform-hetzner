@@ -30,6 +30,7 @@ VPS_USER="openclaw"
 
 # SSH options
 SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+[[ -n "${SSH_KEY:-}" ]] && SSH_OPTS+=" -i $SSH_KEY"
 
 # Terraform directory (relative to repo root)
 TERRAFORM_DIR="infra/terraform/envs/prod"

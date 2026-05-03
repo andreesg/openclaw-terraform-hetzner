@@ -23,7 +23,7 @@ For information about OpenClaw itself, see the [OpenClaw documentation](https://
 1. **Terraform** >= 1.5 ([Installation Guide](https://developer.hashicorp.com/terraform/install))
 2. **Hetzner Cloud Account** with API token ([Console](https://console.hetzner.cloud/))
 3. **Hetzner Object Storage** for Terraform state (optional but recommended)
-4. **SSH Key** at `~/.ssh/id_rsa.pub`
+4. **SSH Key** at `~/.ssh/id_rsa.pub` or custom path (see [SSH Configuration](#ssh-configuration))
 5. **Docker configuration repo**: [openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config)
 
 ## Quick Start
@@ -161,6 +161,15 @@ make setup-auth  # Configure Claude subscription auth
 ```
 
 ## Configuration
+
+### SSH Configuration
+
+By default, scripts use your SSH agent or the default key names (`id_rsa`, `id_ed25519`). If your key has a different name, set `SSH_KEY` in `config/inputs.sh`:
+
+```bash
+export SSH_KEY="$HOME/.ssh/your_key_name"
+```
+
 
 ### Server Sizing
 

@@ -46,6 +46,10 @@ export TF_VAR_ssh_allowed_cidrs='["0.0.0.0/0", "::/0"]'
 # List yours: curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" https://api.hetzner.cloud/v1/ssh_keys | jq '.ssh_keys[] | {name, fingerprint}'
 export TF_VAR_ssh_key_fingerprint="CHANGE_ME_your-ssh-key-fingerprint"
 
+# Path to your SSH private key (optional — defaults to SSH agent / default key names)
+# Set this if your key is not named id_rsa / id_ed25519 or not loaded in your agent.
+# export SSH_KEY="$HOME/.ssh/your_key_name"
+
 # ============================================
 # SERVER CONNECTION
 # ============================================

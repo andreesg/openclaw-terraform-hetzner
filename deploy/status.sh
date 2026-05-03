@@ -21,6 +21,7 @@ set -euo pipefail
 
 VPS_USER="openclaw"
 SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+[[ -n "${SSH_KEY:-}" ]] && SSH_OPTS+=" -i $SSH_KEY"
 TERRAFORM_DIR="infra/terraform/envs/prod"
 
 # -----------------------------------------------------------------------------
