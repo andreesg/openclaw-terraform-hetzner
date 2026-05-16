@@ -9,6 +9,10 @@
 #   1. Reads config files from CONFIG_DIR (local openclaw-config repo)
 #   2. SCPs them to the VPS at ~/.openclaw/
 #   3. Restarts the container to pick up changes
+#
+# NOTE: Credential files (e.g. client_secret.json for gog) should NOT live
+#       in config/. Push them manually once:
+#         scp client_secret.json openclaw@<VPS>:~/.openclaw/
 # =============================================================================
 
 set -euo pipefail

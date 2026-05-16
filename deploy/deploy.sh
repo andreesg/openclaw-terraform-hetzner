@@ -111,7 +111,7 @@ echo ""
 echo -e "${BOLD}Restart${NC}"
 echo ""
 echo -ne "  Starting container...    "
-if docker compose $PROFILES up -d 2>/dev/null; then
+if docker compose $PROFILES up -d; then
     echo -e "${G}done${NC}"
 else
     echo -e "${R}failed${NC}"

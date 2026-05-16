@@ -93,3 +93,6 @@ Desktop.ini
 *.backup
 *.bak
 *.old
+
+# Private Documentation
+walkthrough.md
